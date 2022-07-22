@@ -153,25 +153,34 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               trailing: ElevatedButton(
-                child: const Text("Send"),
                 onPressed: _port == null
                     ? null
                     : () async {
                         if (_port == null) {
                           return;
                         }
-                        String data = _textController.text + "\r\n";
+                        String data = "${_textController.text}\r\n";
                         await _port!.write(Uint8List.fromList(data.codeUnits));
                         _textController.text = "";
                       },
+                child: const Text("Send"),
               ),
             ),
-            
             Text("Result Data", style: Theme.of(context).textTheme.headline6),
-
-            ..._serialData,
-
-
+            Container(
+              width: double.infinity,
+              height: 400,
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white),
+              ),
+              child: SingleChildScrollView(
+                child: Column(children: [
+                  ..._serialData,
+                ]),
+              ),
+            ),
           ],
         ),
       ),
