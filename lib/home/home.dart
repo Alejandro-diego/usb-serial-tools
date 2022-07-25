@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:usb_serial/transaction.dart';
 import 'package:usb_serial/usb_serial.dart';
 
+
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+   const HomePage({Key? key}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState();
+  State<HomePage>  createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
@@ -22,7 +22,8 @@ class _HomePageState extends State<HomePage> {
   Transaction<String>? _transaction;
   UsbDevice? _device;
 
-  final TextEditingController _textController = TextEditingController();
+  final TextEditingController _ssidController = TextEditingController();
+  final TextEditingController _passController = TextEditingController();
 
   Future<bool> _connectTo(device) async {
     _serialData.clear();
@@ -52,9 +53,11 @@ class _HomePageState extends State<HomePage> {
 
     _port = await device.create();
     if (await (_port!.open()) != true) {
-      setState(() {
-        _status = "Failed to open port";
-      });
+      setState(
+        () {
+          _status = "Failed to open port";
+        },
+      );
       return false;
     }
     _device = device;
@@ -67,18 +70,24 @@ class _HomePageState extends State<HomePage> {
     _transaction = Transaction.stringTerminated(
         _port!.inputStream as Stream<Uint8List>, Uint8List.fromList([13, 10]));
 
-    _subscription = _transaction!.stream.listen((String line) {
-      setState(() {
-        _serialData.add(Text(line));
-        if (_serialData.length > 20) {
-          _serialData.removeAt(0);
-        }
-      });
-    });
+    _subscription = _transaction!.stream.listen(
+      (String line) {
+        setState(
+          () {
+            _serialData.add(Text(line));
+            if (_serialData.length > 20) {
+              _serialData.removeAt(0);
+            }
+          },
+        );
+      },
+    );
 
-    setState(() {
-      _status = "Connected";
-    });
+    setState(
+      () {
+        _status = "Connected";
+      },
+    );
     return true;
   }
 
@@ -88,35 +97,40 @@ class _HomePageState extends State<HomePage> {
     if (!devices.contains(_device)) {
       _connectTo(null);
     }
-    print(devices);
+   
 
-    devices.forEach((device) {
-      _ports.add(ListTile(
+    for (var device in devices) {
+      _ports.add(
+        ListTile(
           leading: const Icon(Icons.usb),
           title: Text(device.productName!),
           //subtitle: Text(device.manufacturerName!),
           trailing: ElevatedButton(
             child: Text(_device == device ? "Disconnect" : "Connect"),
             onPressed: () {
-              _connectTo(_device == device ? null : device).then((res) {
-                _getPorts();
-              });
+              _connectTo(_device == device ? null : device).then(
+                (res) {
+                  _getPorts();
+                },
+              );
             },
-          )));
-    });
+          ),
+        ),
+      );
+    }
 
-    setState(() {
-      print(_ports);
-    });
+    
   }
 
   @override
   void initState() {
     super.initState();
 
-    UsbSerial.usbEventStream!.listen((UsbEvent event) {
-      _getPorts();
-    });
+    UsbSerial.usbEventStream!.listen(
+      (UsbEvent event) {
+        _getPorts();
+      },
+    );
 
     _getPorts();
   }
@@ -131,57 +145,86 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('USB Serial '),
+        title: const Text('IOTech Serial Tool '),
       ),
       body: Center(
-        child: Column(
-          children: <Widget>[
-            Text(
-                _ports.length > 0
-                    ? "Available Serial Ports"
-                    : "No serial devices available",
-                style: Theme.of(context).textTheme.headline6),
-            ..._ports,
-            Text('Status: $_status\n'),
-            Text('info: ${_port.toString()}\n'),
-            ListTile(
-              title: TextField(
-                controller: _textController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Text To Send',
-                ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: <Widget>[
+              Text(
+                  _ports.isNotEmpty
+                      ? "Available Serial Ports"
+                      : "No serial devices available",
+                  style: Theme.of(context).textTheme.headline6),
+              ..._ports,
+              Text('Status: $_status\n'),
+              Text('info: ${_port.toString()}\n'),
+              Column(
+                children: [
+                  SizedBox(
+                    height: 150,
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _ssidController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Ssid',
+                          ),
+                        ),
+                        const Spacer(),
+                        TextField(
+                          controller: _passController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Pass',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              trailing: ElevatedButton(
+              ElevatedButton(
                 onPressed: _port == null
                     ? null
                     : () async {
                         if (_port == null) {
                           return;
                         }
-                        String data = "${_textController.text}\r\n";
-                        await _port!.write(Uint8List.fromList(data.codeUnits));
-                        _textController.text = "";
+                        String data =
+                          "${_ssidController.text},${_passController.text},";
+                        //    "${_ssidController.text},${_passController.text},\r\n";
+                        await _port!.write(
+                          Uint8List.fromList(data.codeUnits),
+                        );
+                      
+                        _ssidController.text = "";
+                        _passController.text = "";
                       },
                 child: const Text("Send"),
               ),
-            ),
-            Text("Result Data", style: Theme.of(context).textTheme.headline6),
-            Container(
-              width: double.infinity,
-              height: 400,
-              padding: const EdgeInsets.all(8),
-              margin: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white),
+              Text("Result Data", style: Theme.of(context).textTheme.headline6),
+              Container(
+                width: double.infinity,
+                height: 400,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ..._serialData,
+                    ],
+                  ),
+                ),
               ),
-              child: SingleChildScrollView(
-                child: Column(children: [
-                  ..._serialData,
-                ]),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
