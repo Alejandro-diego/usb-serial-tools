@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:usb_serial/transaction.dart';
 import 'package:usb_serial/usb_serial.dart';
 
-
 class HomePage extends StatefulWidget {
-   const HomePage({Key? key}) : super(key: key);
+  const HomePage({Key? key}) : super(key: key);
 
   @override
-  State<HomePage>  createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  final _formKey = GlobalKey<FormState>();
   UsbPort? _port;
   String _status = "Idle";
   List<Widget> _ports = [];
@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
 
   final TextEditingController _ssidController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
+  final TextEditingController _dispController = TextEditingController();
 
   Future<bool> _connectTo(device) async {
     _serialData.clear();
@@ -97,7 +98,6 @@ class _HomePageState extends State<HomePage> {
     if (!devices.contains(_device)) {
       _connectTo(null);
     }
-   
 
     for (var device in devices) {
       _ports.add(
@@ -118,8 +118,6 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
-
-    
   }
 
   @override
@@ -162,47 +160,101 @@ class _HomePageState extends State<HomePage> {
               Column(
                 children: [
                   SizedBox(
-                    height: 150,
                     width: MediaQuery.of(context).size.width * 0.7,
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _ssidController,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: 'Ssid',
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _ssidController,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              labelText: 'Sidd',
+                              errorStyle: TextStyle(color: Colors.yellowAccent),
+                              errorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.yellowAccent,
+                                ),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Sidd empty';
+                              }
+                              return null;
+                            },
                           ),
-                        ),
-                        const Spacer(),
-                        TextField(
-                          controller: _passController,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: 'Pass',
+                          const SizedBox(
+                            height: 20,
                           ),
-                        ),
-                      ],
+                          TextFormField(
+                            controller: _passController,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              labelText: 'Pass',
+                              errorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.yellowAccent,
+                                ),
+                              ),
+                              errorStyle: TextStyle(
+                                color: Colors.yellowAccent,
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Pass empty';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(
+                            height: 20,
+                          ),
+                          TextFormField(
+                            controller: _dispController,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              labelText: 'Dispositivo',
+                              errorStyle: TextStyle(color: Colors.yellowAccent),
+                              errorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.yellowAccent,
+                                ),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Sidd empty';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
               ElevatedButton(
                 onPressed: _port == null
-                    ? null
-                    : () async {
-                        if (_port == null) {
-                          return;
-                        }
-                        String data =
-                          "${_ssidController.text},${_passController.text},";
-                        //    "${_ssidController.text},${_passController.text},\r\n";
-                        await _port!.write(
-                          Uint8List.fromList(data.codeUnits),
-                        );
-                      
-                        _ssidController.text = "";
-                        _passController.text = "";
-                      },
+                     ? null
+                    :() async {
+                  if (_formKey.currentState!.validate()) {
+                    if (_port == null) {
+                      return;
+                    }
+                    String data =
+                        "${_ssidController.text},${_passController.text},${_dispController.text}";
+                    //    "${_ssidController.text},${_passController.text},\r\n";
+                    await _port!.write(
+                      Uint8List.fromList(data.codeUnits),
+                    );
+                    _dispController.text = "";
+                    _ssidController.text = "";
+                    _passController.text = "";
+                  }
+                },
                 child: const Text("Send"),
               ),
               Text("Result Data", style: Theme.of(context).textTheme.headline6),

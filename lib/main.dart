@@ -17,7 +17,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Iotech_tool',
-      theme: ThemeData.dark(),
+      theme: ThemeData.dark(
+        
+      ),
       home: const HomePage(),
     );
   }
